@@ -5,6 +5,7 @@ using Statistics
 using CSV 
 using DataFrames 
 using FreqTables
+using Distributions
 
 function q1()
 	cd("C:/Users/jakek/Documents/econ_phd/structural_modeling_course/forked_class/ProblemSets/PS1-julia-intro")
@@ -45,3 +46,38 @@ end
 
 A,B,C,D = q1()
 
+## 2.
+# a.
+function q2(A,B,C,D)
+	AB = [A[i,j]*A[i,j] for i=1:size(A,1),j=1:size(A,2)]
+	AB2 = A .*B
+	# b.
+	Cprime = Float64[]
+	for i in 1:length(C)
+		if abs(C[i])<5
+		append!(Cprime, C[i])
+		end
+	end
+	Cprime2 = C[abs.(C) .<5]
+	Cprime == Cprime2
+
+	# c
+	X = Array{Float64}(undef, 15169, 6,5)
+	for t in 1:size(X,3)
+	X[1:15169,1,t] .= 1
+	X[1:15169,2,t] .= rand(Bernoulli(0.75*(6-t)/5),15169)
+	X[1:15169,3,t] .= vec((5*(t-1)) .*randn(15169,1) .+(15+t-1))
+	X[1:15169,4,t] .= vec(1/MathConstants.e .*randn(15169,1) .+(MathConstants.pi*(6-t)/3))
+	X[1:15169,5,t] .= vec(rand(Binomial(20,0.6),15169))
+	X[1:15169,6,t] .= vec(rand(Binomial(20,0.5),15169))
+	end
+
+	# d.
+	beta = [(0.25*t +0.75 , log(t),-t^(1/2),exp(t)-exp(t+1),t,t/3) for t in 1:5]
+	beta = reduce(hcat, getindex.(beta,i) for i in eachindex(beta[1]))'
+
+	# e
+	Y = [ X[n,:,t]'*beta[:,t] + randn(1,1)[1]*0.36 for t in 1:5, n in 1:15169]'
+end
+
+q2(A,B,C,D)
