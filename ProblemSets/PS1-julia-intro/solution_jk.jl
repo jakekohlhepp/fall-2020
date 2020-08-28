@@ -81,3 +81,15 @@ function q2(A,B,C,D)
 end
 
 q2(A,B,C,D)
+
+## 3. 
+# a.
+workspace()
+
+data = CSV.read("nlsw88.csv")
+@save "nlsw88.jld" data
+# b.
+mean(data.never_married)
+mean(data.collgrad)
+# c
+prop(freqtable(data.race))
