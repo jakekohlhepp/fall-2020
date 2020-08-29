@@ -82,14 +82,22 @@ end
 
 q2(A,B,C,D)
 
-## 3. 
-# a.
-workspace()
-
-data = CSV.read("nlsw88.csv")
-@save "nlsw88.jld" data
-# b.
-mean(data.never_married)
-mean(data.collgrad)
-# c
-prop(freqtable(data.race))
+function q3()
+	## 3. 
+	# a.
+	data = CSV.read("nlsw88.csv")
+	@save "nlsw88.jld" data
+	# b.
+	mean(data.never_married)
+	mean(data.collgrad)
+	# c
+	prop(freqtable(data.race))
+	# d 
+	summarystats=describe(data)
+	# e
+	freqtable(data.industry, data.occupation)
+	# f split apply combine part.
+	subset = select(data, :wage, :occupation, :industry)
+	combine(groupby(subset, All(:industry, :occupation)), :wage => mean)
+end
+q3()
