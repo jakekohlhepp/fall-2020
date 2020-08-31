@@ -101,3 +101,38 @@ function q3()
 	combine(groupby(subset, All(:industry, :occupation)), :wage => mean)
 end
 q3()
+
+function q4()
+	# 4.
+	# a
+	@load "firstmatrix.jld"
+	# b., c,d,e
+	function matrixops(x,y)
+		if  size(x) != size(y) 
+			error("inputs must have the same size")
+		end
+		# creates 3 outputs: element by element product, product, and sum
+		return(x .*y, x'*y , x .+y)
+	end
+	E1, E2, E3 = matrixops(A,B)
+	E1
+	E2
+	E3
+	# f
+	try 
+		matrixops(C,D)
+	catch err
+		print(err)
+	end
+	# g 
+	@load "nlsw88.jld"
+	ttl_exp = convert(Array,data.ttl_exp)
+
+	wage = convert(Array,data.wage)
+	E1, E2, E3 = matrixops(ttl_exp, wage)
+	E1
+	E2
+	E3
+end
+
+q4()
