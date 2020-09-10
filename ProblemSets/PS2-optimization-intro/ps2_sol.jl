@@ -93,7 +93,7 @@ function fullquestions()
 	starting = repeat(starting[Not(1)], inner = 4)
 	starting[Not((1:6) .*4 .-3)] .= 0
 
-	beta_hat_mlogit = optimize(b -> mlogit(b, X, y),starting, NelderMead(), Optim.Options(g_tol=1e-6, iterations=100_000, show_trace=true))
+	beta_hat_mlogit = optimize(b -> mlogit(b, X, y),starting, BFGS(), Optim.Options(g_tol=1e-6, iterations=100_000, show_trace=true))
 	println(vec(beta_hat_mlogit.minimizer))
 end
 
