@@ -52,13 +52,14 @@ function nlogit(alpha, X, d,Z)
 	Zbar = Z .- Z[:,8]
 	u = reduce(hcat,[exp.((X*alpha[1:3].*(i<=3)+ X*alpha[5:7].*(3<i<=7).+ Zbar[:,i] .*alpha[9]) ./ (alpha[4]*(i<=3)+alpha[8]*(3<i<=7))) for i in 1:8])
 	u[:, 8] .= 1
-	wc_denom = sum(u[:,1:3], dims=2) .^alpha[4]
-	bc_denom = sum(u[:,4:7], dims=2) .^alpha[8]
-	u[:, 1:3] = (u[:, 1:3] .* wc_denom .^(-1)) ./ (1 .+ bc_denom .+wc_denom)
-	u[:, 4:7] = u[:, 4:7] .* bc_denom .^(-1) ./ (1 .+ bc_denom .+wc_denom)
-	u[:, 8] = u[:, 8] ./ (1 .+ bc_denom .+wc_denom)
+	wc_denom = sum(u[:,1:3], dims=2) 
+	bc_denom = sum(u[:,4:7], dims=2) 
+	u[:, 1:3] = (u[:, 1:3] .* wc_denom .^(alpha[4]-1)) ./ (1 .+ bc_denom.^alpha[8] .+wc_denom.^alpha[4])
+	u[:, 4:7] = u[:, 4:7] .* bc_denom .^(alpha[8]-1) ./ (1 .+ bc_denom.^alpha[8] .+wc_denom.^alpha[4])
+	u[:, 8] = u[:, 8] ./ (1 .+ bc_denom.^alpha[8] .+wc_denom.^alpha[4])
+	u = log.(u)
 	help = reduce(hcat,[d.==i for i in 1:8])
-	loglike = sum(log.( help .*u ))
+	loglike = sum( help .*u )
 	return -loglike
 end
 
@@ -66,8 +67,11 @@ end
 starting = Vector(prop(freqtable(df, :nest)))
 starting = repeat(starting[Not(3)], inner = 4)
 starting[Not((1:2) .*4 .-3)] .= 0
-starting .= 0
 starting[[4 8]] .= 1
 # one extra row for the wage coef
 starting = append!(starting, 0)
-beta_hat_mlogit = optimize(b -> nlogit(b, X, y,Z),starting, BFGS(), Optim.Options(g_tol=1e-6, iterations=100_000, show_trace=true))
+beta_hat_nlogit = optimize(b -> nlogit(b, X, y,Z),starting, BFGS(), Optim.Options(g_tol=1e-6, iterations=100_000, show_trace=true))
+res = reduce(hcat,[vec(beta_hat_nlogit.minimizer)[(4*i-3):(4*i)] for i in 1:2])
+res = [res [vec(beta_hat_nlogit.minimizer)[9] 0 0 0]']
+CSV.write("q3.csv", convert(DataFrame,res))
+
