@@ -85,7 +85,7 @@ function mixlogit(alpha, X, d,Z)
 	Zbar = Z .- Z[:,8]
 	sig = exp(alpha[23])
 	dist = Normal(alpha[22],sig)
-	nodes, weights = lgwt(10,5*sig,-5*sig)
+	nodes, weights = lgwt(10,5*sig+alpha[22],-5*sig+alpha[22])
 	# make 3d array, with quad points.
 	for j in 1:10
 		u[:,:,j] = exp.(reduce(hcat,[X*alpha[(3*i-2):(3*i)] .+ Zbar[:,i] .*nodes[j] for i in 1:7]))
@@ -100,7 +100,7 @@ end
 
 starting = append!(vec(starting), 1)
 td = TwiceDifferentiable(b -> mixlogit(b, X, y,Z), starting; autodiff = :forward)
-beta_mixlogit = optimize(td,starting, Optim.Options(g_tol=1e-6, iterations=100_000, show_trace=true))
+beta_mixlogit = optimize(td,starting, Optim.Options(g_tol=1e-5, iterations=100_000, show_trace=true))
 H  = Optim.hessian!(td, beta_mixlogit.minimizer)
 #beta_hat_mlogit_se = sqrt.(diag(inv(H)))
 # res = vcat(beta_mixlogit.minimizer', beta_hat_mlogit_se' )
