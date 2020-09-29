@@ -87,4 +87,4 @@ beta_zurcher = optimize(td,θ_true, Optim.Options(g_tol=1e-5, iterations=100_000
 H  = Optim.hessian!(td, beta_zurcher.minimizer)
 se= sqrt.(diag(inv(H)))
 res = vcat(beta_zurcher.minimizer', se' )
-CSV.write("q45.csv", convert(DataFrame,res'))
+CSV.write("q5.csv", convert(DataFrame,res'))
