@@ -33,6 +33,54 @@ select!(dfx_long, Not(:variable))
 df_long = leftjoin(dfy_long, dfx_long, on = [:bus_id,:time])
 sort!(df_long,[:bus_id,:time])
 
+Zst = convert(Vector, df[:,:Zst])
+B = convert(Vector, df[:,:Branded])
+X = df[:, 43:62]
+
 ## 2. Run flexible logit
-beta_glm = glm(@formula(Y ~ Odometer*Odometer^2*RouteUsage*RouteUsage^2*Branded*time*time^2 ), df_long, Binomial(), LogitLink())
+beta_glm = glm(@formula(Y ~ Odometer*Odometer*RouteUsage*RouteUsage*Branded*time*time ), df_long, Binomial(), LogitLink())
 println(beta_glm)
+
+### 3
+## a. state transitions
+zval,zbin,xval,xbin,xtran = create_grids()
+
+
+## b. 
+Helper = DataFrame(Odometer = kron(ones(zbin),xval),RouteUsage = kron(ones(xbin),zval), Branded = vec(zeros(size(xtran,1),1)),time = vec(zeros(size(xtran,1),1)))
+beta=0.9
+
+function ccp_estim(glm_est, helper, zval,zbin,xval,xbin,xtran,beta,df_long,df, B, Zst,X)
+	FV = repeat(zeros(size(xtran,1),2 ),1,1,21)
+	FVT1 = zeros(size(df,1),20 )
+	for t=2:20
+		for b=0:1
+			helper[:,:time] = t .*(ones(size(helper,1)))
+			helper[:,:Branded] = b.* ones(size(helper,1))
+			p0 = 1 .- predict(glm_est,helper)
+			FV[:,b+1,t] = -beta .* log.(p0)
+		end
+	end
+
+	for i=1:size(df,1)
+		for t=1:20
+			row0 = 1+(Zst[i]-1)*xbin
+			row1 = X[i,t]+(Zst[i]-1)*xbin
+			FVT1[i,t] = (xtran[row1,:] .- xtran[row0,:])' * FV[row0:row0+xbin-1,B[i]+1,t+1]
+		end
+	end
+	FVT1 = @transform(convert(DataFrame, FVT1), bus_id = 1:size(df,1))
+	FVT1 = DataFrames.stack(FVT1, Not([:bus_id]))
+	FVT1 = @transform(FVT1, time = kron(collect([1:20]...),ones(size(df,1))))
+	sort!(FVT1,[:bus_id,:time])
+	return FVT1
+end
+
+fvt1 = ccp_estim(beta_glm, Helper, zval,zbin,xval,xbin,xtran,beta,df_long,df,B,Zst, X)  
+
+fv=convert(Vector, fvt1[:,:value])
+df_long = @transform(df_long,fv=fv )
+
+## final estimation
+
+theta_hat_ccp_glm = glm(@formula(Y ~ Odometer + Branded), df_long, Binomial(), LogitLink(), offset=df_long.fv)
